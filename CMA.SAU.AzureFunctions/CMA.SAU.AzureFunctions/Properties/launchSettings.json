@@ -1,0 +1,7 @@
+{
+  "profiles": {
+    "CMA.SAU.AzureFunctions": {
+      "commandName": "Project"
+    }
+  }
+}
