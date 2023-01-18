@@ -37,6 +37,10 @@ namespace CMA.SAU.AzureFunctions
                         await User.HasCaseAccessAsync(log, response, (string)payload.userId, (string)payload.requestId);
                         break;
 
+                    case "User.PACreatedUser":
+                        await User.PACreatedUser(log, response, (string)payload.userCreated, (string)payload.creatorName, (string)payload.creatorEmail, (string)payload.pa_name);
+                        break;
+
                     case "RequestReport.Submit":
                         RequestReport.Submit(log, response, payload.reference, payload.uniqueId, payload.documents, payload.request);
                         break;
