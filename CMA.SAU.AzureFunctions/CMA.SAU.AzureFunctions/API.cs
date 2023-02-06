@@ -33,6 +33,10 @@ namespace CMA.SAU.AzureFunctions
                         await User.InviteToRoleAsync(log, response, (string)payload.email, (string)payload.role);
                         break;
 
+                    case "User.Remove":
+                        await User.Remove(log, response, (string)payload.userId, (string)payload.role);
+                        break;
+
                     case "User.HasCaseAccess":
                         await User.HasCaseAccessAsync(log, response, (string)payload.userId, (string)payload.requestId);
                         break;

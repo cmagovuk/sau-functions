@@ -81,6 +81,30 @@ namespace CMA.SAU.AzureFunctions
             return;
         }
 
+        internal static async Task Remove(ILogger log, Response response, string userId, string role)
+        {
+            log.LogInformation($"User.Remove userId: {userId}, role: {role}");
+            string groupId = Utilities.TranslateOne(role, "ROLE_MAPPINGS");
+
+            if (!String.IsNullOrWhiteSpace(groupId) && !String.IsNullOrWhiteSpace(userId))
+            {
+                GraphServiceClient graphClient = Utilities.GetGraphClientWithCert();
+
+                bool isGroupMember = await IsMemberOfGroup(graphClient, userId, groupId);
+
+                if (isGroupMember)
+                {
+                    await RemoveUserFromGroup(graphClient, userId, groupId);
+                }
+
+                response.data = userId;
+            }
+            else
+            {
+                throw (new ArgumentException("Unknown role or no userId value"));
+            }
+        }
+
         internal static async Task PACreatedUser(ILogger log, Response response, string newUser, string creatorName, string creatorEmail, string pa_name)
         {
             // Get members of SAU Admin group
@@ -136,6 +160,13 @@ namespace CMA.SAU.AzureFunctions
                 .AddAsync(directoryObject);
             // Use user Id to set up group membership result.InvitedUser.Id
             // Add userId to Response, so caller can keep reference
+        }
+
+        private static async Task RemoveUserFromGroup(GraphServiceClient graphClient, string userId, string groupId)
+        {
+            await graphClient.Groups[$"{{{groupId}}}"].Members[$"{{{userId}}}"].Reference
+                .Request()
+                .DeleteAsync();
         }
 
         private static async Task<bool> IsMemberOfGroup(GraphServiceClient graphClient, string userId, string groupId)
