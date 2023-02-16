@@ -53,6 +53,10 @@ namespace CMA.SAU.AzureFunctions
                         RequestReport.InformationResponse(log, response, payload.uniqueId, payload.documents);
                         break;
 
+                    case "RequestReport.WithdrawRequest":
+                        RequestReport.WithdrawRequest(log, response, payload.uniqueId, payload.documents);
+                        break;
+
                     case "RequestReport.Mailbox":
                         RequestReport.Mailbox(log, response, payload.uniqueId);
                         break;
