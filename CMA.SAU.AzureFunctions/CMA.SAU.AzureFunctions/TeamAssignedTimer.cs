@@ -169,7 +169,7 @@ namespace CMA.SAU.AzureFunctions
             query.ViewXml = "<View>" +
                      "<Query>" +
                      "<Where>" +
-                     $"<Geq><FieldRef Name='Created' /><Value Type='DateTime'><Today OffsetDays='{offsetDays()}' /></Value></Geq>" +
+                     $"<Geq><FieldRef Name='Created' /><Value Type='DateTime'><Today OffsetDays='{OffsetDays()}' /></Value></Geq>" +
                      "</Where>" +
                      "</Query>" +
                      "</View>";
@@ -194,7 +194,7 @@ namespace CMA.SAU.AzureFunctions
                      "<Where>" +
                      "<And>" +
                      $"<Eq><FieldRef Name='ProjectType' LookupId='true' /><Value Type='Lookup'>{projectId}</Value></Eq>" + 
-                     $"<Geq><FieldRef Name='Created' /><Value Type='DateTime'><Today OffsetDays='{offsetDays()}' /></Value></Geq>" +
+                     $"<Geq><FieldRef Name='Created' /><Value Type='DateTime'><Today OffsetDays='{OffsetDays()}' /></Value></Geq>" +
                      "</And>" +
                      "</Where>" +
                      "</Query>" +
@@ -206,7 +206,7 @@ namespace CMA.SAU.AzureFunctions
             return items;
         }
 
-        private string offsetDays()
+        private string OffsetDays()
         {
             string offsetDaysEnv = System.Environment.GetEnvironmentVariable("TEAM_ASSIGNED_DAYS");
             if (!int.TryParse(offsetDaysEnv, out int offsetDays)) offsetDays = -10;

@@ -33,8 +33,16 @@ namespace CMA.SAU.AzureFunctions
                         await User.InviteToRoleAsync(log, response, (string)payload.email, (string)payload.role);
                         break;
 
+                    case "User.Remove":
+                        await User.Remove(log, response, (string)payload.userId, (string)payload.role);
+                        break;
+
                     case "User.HasCaseAccess":
                         await User.HasCaseAccessAsync(log, response, (string)payload.userId, (string)payload.requestId);
+                        break;
+
+                    case "User.PACreatedUser":
+                        await User.PACreatedUser(log, response, (string)payload.userCreated, (string)payload.creatorName, (string)payload.creatorEmail, (string)payload.pa_name);
                         break;
 
                     case "RequestReport.Submit":
@@ -43,6 +51,10 @@ namespace CMA.SAU.AzureFunctions
 
                     case "RequestReport.InformationResponse":
                         RequestReport.InformationResponse(log, response, payload.uniqueId, payload.documents);
+                        break;
+
+                    case "RequestReport.WithdrawRequest":
+                        RequestReport.WithdrawRequest(log, response, payload.uniqueId, payload.documents);
                         break;
 
                     case "RequestReport.Mailbox":

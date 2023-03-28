@@ -120,7 +120,7 @@ namespace CMA.SAU.AzureFunctions
             }
             catch (Exception ex)
             {
-                log.LogError(ex, ex.Message);
+                log.LogWarning(ex.Message);
                 log.LogError("Failed copying document to case site");
             }
         }
@@ -128,7 +128,11 @@ namespace CMA.SAU.AzureFunctions
         internal static void SendEmail(ClientContext ctx, string emailRecipients, string emailBody, string emailSubject)
         {
             List<string> recipients = new List<string> (emailRecipients.Split(';', StringSplitOptions.RemoveEmptyEntries));
+            SendEmail(ctx, recipients, emailBody, emailSubject);
+        }
 
+        internal static void SendEmail(ClientContext ctx, List<string> recipients, string emailBody, string emailSubject)
+        {
             var ep = new EmailProperties
             {
                 To = recipients,
