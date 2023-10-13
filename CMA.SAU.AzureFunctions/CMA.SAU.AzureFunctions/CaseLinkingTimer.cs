@@ -17,6 +17,59 @@ namespace CMA.SAU.AzureFunctions
         {
             log.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
             ProcessCaseLinking(log);
+            ProcessRFIResponses(log);
+        }
+
+        private void ProcessRFIResponses(ILogger log)
+        {
+            ListItemCollection rfiResponses = GetInCompleteRFIResponses();
+            log.LogInformation($"Processing {rfiResponses.Count} RFI Response records");
+            if (rfiResponses.Count > 0)
+            {
+                string submission_list = System.Environment.GetEnvironmentVariable("SUBMISSIONS_LIST");
+                using ClientContext ctx = Utilities.GetSAUCasesContext();
+                List list = ctx.Web.Lists.GetByTitle(submission_list);
+                foreach (ListItem item in rfiResponses)
+                {
+                    string uniqueId = item[Constants.UNIQUE_ID] as string;
+                    dynamic documents = JsonConvert.DeserializeObject((string)item[Constants.DOCUMENT_JSON]);
+                    CamlQuery query = CamlQuery.CreateAllItemsQuery();
+                    query.ViewXml = "<View><ViewFields>" +
+                            $"<FieldRef Name='{Constants.SAU_CASE_SITE_URL}'/>" +
+                             "</ViewFields><Query>" +
+                             "<Where>" +
+                             $"<Eq><FieldRef Name='SAURequestUniqueID' /><Value Type='Text'>{uniqueId}</Value></Eq>" +
+                             "</Where>" +
+                             "</Query>" +
+                             "</View>";
+
+                    ListItemCollection items = list.GetItems(query);
+                    ctx.Load(items);
+                    ctx.ExecuteQueryRetry();
+
+                    if (items.Count == 1)
+                    {
+                        if (items[0][Constants.SAU_CASE_SITE_URL] is string caseUrl)
+                        {
+                            log.LogInformation($"Found casework site {caseUrl}");
+                            ProcessResponse(caseUrl, documents, log);
+                        }
+                        else
+                        {
+                            log.LogError("Failed to find Casework item");
+                        }
+                    }
+                    item["SAUCompleted"] = true;
+                    item.Update();
+                    item.Context.ExecuteQueryRetry();
+                }
+            }        
+        }
+
+        private void ProcessResponse(string caseUrl, dynamic documents, ILogger log)
+        {
+            using ClientContext ctx = Utilities.GetContext(caseUrl);
+            Utilities.CopyDocumentsToCaseSiteSubFolder(ctx, log, documents, $"Information request responses/Response_{DateTime.Now:yyyy_MM_dd_HH_mm}");
         }
 
         private static void ProcessCaseLinking(ILogger log)
@@ -164,6 +217,31 @@ namespace CMA.SAU.AzureFunctions
             sub[Constants.SAU_INTERNAL_MAILBOX_ID] = caseRequest[Constants.INTERNAL_MAILBOX_ID];
             sub.Update();
             sub.Context.ExecuteQueryRetry();
+        }
+
+        private ListItemCollection GetInCompleteRFIResponses()
+        {
+            string rfiResponseList = System.Environment.GetEnvironmentVariable("RFI_RESPONSES_LIST");
+
+            using (ClientContext ctx = Utilities.GetSAUCasesContext())
+            {
+                List list = ctx.Web.Lists.GetByTitle(rfiResponseList);
+
+                CamlQuery query = CamlQuery.CreateAllItemsQuery();
+                query.ViewXml = "<View>" +
+                         "<Query>" +
+                         "<Where>" +
+                         $"<Eq><FieldRef Name='SAUCompleted' /><Value Type='Boolean'>0</Value></Eq>" +
+                         "</Where>" +
+                         "</Query>" +
+                         "</View>";
+
+                ListItemCollection items = list.GetItems(query);
+                ctx.Load(items);
+                ctx.ExecuteQueryRetry();
+
+                return items;
+            }
         }
 
         private static ListItemCollection GetCasesToLink()

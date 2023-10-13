@@ -30,46 +30,36 @@ namespace CMA.SAU.AzureFunctions
              * Add response document to site
              */
             string submission_list = System.Environment.GetEnvironmentVariable("SUBMISSIONS_LIST");
-            using (ClientContext ctx = Utilities.GetSAUCasesContext())
-            {
-                List list = ctx.Web.Lists.GetByTitle(submission_list);
+            using ClientContext ctx = Utilities.GetSAUCasesContext();
+            List list = ctx.Web.Lists.GetByTitle(submission_list);
 
-                CamlQuery query = CamlQuery.CreateAllItemsQuery();
-                query.ViewXml = "<View><ViewFields>" +
-                        $"<FieldRef Name='{Constants.SAU_CASE_SITE_URL}'/><FieldRef Name='{Constants.SAU_EXTERNAL_MAILBOX_ID}'/>" +
-                         "</ViewFields><Query>" +
-                         "<Where>" +
-                         $"<Eq><FieldRef Name='SAURequestUniqueID' /><Value Type='Text'>{uniqueId}</Value></Eq>" +
-                         "</Where>" +
+            CamlQuery query = CamlQuery.CreateAllItemsQuery();
+            query.ViewXml = "<View><ViewFields>" +
+                    $"<FieldRef Name='{Constants.SAU_EXTERNAL_MAILBOX_ID}'/>" +
+                        "</ViewFields><Query>" +
+                            "<Where>" +
+                                $"<Eq><FieldRef Name='SAURequestUniqueID' /><Value Type='Text'>{uniqueId}</Value></Eq>" +
+                            "</Where>" +
                          "</Query>" +
-                         "</View>";
+                     "</View>";
 
-                ListItemCollection items = list.GetItems(query);
-                ctx.Load(items);
-                ctx.ExecuteQueryRetry();
+            ListItemCollection items = list.GetItems(query);
+            ctx.Load(items);
+            ctx.ExecuteQueryRetry();
 
-                if (items.Count == 1)
+            if (items.Count == 1)
+            {
+                ProcessResponse(log, uniqueId, documents);
+
+                if (items[0][Constants.SAU_EXTERNAL_MAILBOX_ID] is string mailboxId)
                 {
-                    if (items[0][Constants.SAU_CASE_SITE_URL] is string caseUrl)
-                    {
-                        log.LogInformation($"Found casework site {caseUrl}");
-                        ProcessResponse(caseUrl, documents, log);
-
-                        if (items[0][Constants.SAU_EXTERNAL_MAILBOX_ID] is string mailboxId)
-                        {
-                            Microsoft.Graph.GraphServiceClient graphClient = Utilities.GetGraphClientWithCert();
-                            var result = graphClient.Users[mailboxId].Request().GetAsync().Result;
-                            response.data = result.UserPrincipalName;
-                        }
-                        else
-                        {
-                            log.LogError("Failed to find email box");
-                        }
-                    }
-                    else
-                    {
-                        log.LogError("Failed to find Casework item");
-                    }
+                    Microsoft.Graph.GraphServiceClient graphClient = Utilities.GetGraphClientWithCert();
+                    var result = graphClient.Users[mailboxId].Request().GetAsync().Result;
+                    response.data = result.UserPrincipalName;
+                }
+                else
+                {
+                    log.LogError("Failed to find email box");
                 }
             }
         }
@@ -173,10 +163,19 @@ namespace CMA.SAU.AzureFunctions
             }
         }
 
-        private static void ProcessResponse(string caseUrl, dynamic documents, ILogger log)
+        private static void ProcessResponse(ILogger log, dynamic uniqueId, dynamic documents)
         {
-            using ClientContext ctx = Utilities.GetContext(caseUrl);
-            Utilities.CopyDocumentsToCaseSiteSubFolder(ctx, log, documents, $"Information request responses/Response_{DateTime.Now:yyyy_MM_dd_HH_mm}");
+            string submission_list = System.Environment.GetEnvironmentVariable("RFI_RESPONSES_LIST");
+            using ClientContext ctx = Utilities.GetSAUCasesContext();
+            List list = ctx.Web.Lists.GetByTitle(submission_list);
+            ListItemCreationInformation lici = new ListItemCreationInformation();
+            ListItem listItem = list.AddItem(lici);
+            listItem[Constants.TITLE] = $"RFI Response for: {uniqueId}";
+            listItem[Constants.UNIQUE_ID] = (string)uniqueId;
+            listItem[Constants.DOCUMENT_JSON] = documents.ToString();
+            listItem["SAUCompleted"] = false;
+            listItem.Update();
+            ctx.ExecuteQueryRetry();
         }
     }
 }
