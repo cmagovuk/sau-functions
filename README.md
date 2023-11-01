@@ -150,6 +150,7 @@ NB: this description uses a PowerShell script to create a certificate, over meth
     **CLIENT_ID** | Guid of App Registration created [above](#prerequisite-1-create-certificate)
     **OIM_SITE_COLLECTION** | Url of the SharePoint site collection containing list
     **PAP_URL** | SAU PAP url
+    **RFI_RESPONSES_LIST** | SAU cases RFI Responses list
     **ROLE_MAPPINGS** | Thumbprint of certificate loaded into Function App
     **SAU_CASES_SITE** | SharePoint SAU cases site
     **SAU_PROJECT_TYPE_ID** | SAU Casework Project type ID
