@@ -46,7 +46,7 @@ namespace CMA.SAU.AzureFunctions
                         break;
 
                     case "RequestReport.Submit":
-                        RequestReport.Submit(log, response, payload.reference, payload.uniqueId, payload.documents, payload.request);
+                        RequestReport.Submit(log, response, payload.reference, payload.uniqueId, payload.documents, payload.request, payload.projectName);
                         break;
 
                     case "RequestReport.InformationResponse":

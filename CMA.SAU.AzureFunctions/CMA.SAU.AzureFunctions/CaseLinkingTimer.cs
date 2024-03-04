@@ -63,7 +63,7 @@ namespace CMA.SAU.AzureFunctions
                     item.Update();
                     item.Context.ExecuteQueryRetry();
                 }
-            }        
+            }
         }
 
         private void ProcessResponse(string caseUrl, dynamic documents, ILogger log)
@@ -106,6 +106,7 @@ namespace CMA.SAU.AzureFunctions
                                         log.LogInformation($"Found casework site {caseUrl}");
                                         ProcessCase(sub, caseUrl, log);
                                         UpdateSubmission(sub, request);
+                                        SendEmail(log, request);
                                     }
                                     else
                                     {
@@ -217,6 +218,31 @@ namespace CMA.SAU.AzureFunctions
             sub[Constants.SAU_INTERNAL_MAILBOX_ID] = caseRequest[Constants.INTERNAL_MAILBOX_ID];
             sub.Update();
             sub.Context.ExecuteQueryRetry();
+        }
+
+        private static void SendEmail(ILogger log, ListItem caseRequest)
+        {
+            string caseGroupId = (string)caseRequest[Constants.GROUP_ID];
+            string caseUrl = (string)caseRequest[Constants.SITE_URL];
+            // Get email address to send to
+            if (!string.IsNullOrEmpty(caseGroupId) && !string.IsNullOrEmpty(caseUrl))
+            {
+                string emailSubject = System.Environment.GetEnvironmentVariable("NEW_REQUEST_SUBJECT");
+                emailSubject = emailSubject.Replace("{ID}", $"SAU{caseRequest[Constants.PROJECT_ID]}");
+                Microsoft.Graph.GraphServiceClient gc = Utilities.GetGraphClientWithCert();
+                var groupMembers = Utilities.GetGroupMembers(gc, caseGroupId);
+
+                //using ClientContext ctx = Utilities.GetSAUCasesContext();
+                using ClientContext ctx = Utilities.GetContext(caseUrl);
+                // Build email body
+                string emailBody = $"<p>Hi</p>"
+                    + $"<p>Request SAU{caseRequest[Constants.PROJECT_ID]} has been submitted on the PAP.</p>"
+                    + $"<p><a href='{caseUrl}'>Click here to go to the '{caseRequest[Constants.PROJECT_NAME]} {caseRequest[Constants.PROJECT_ID]}' site</a></p>";
+
+                // Send email
+                log.LogInformation($"Sending email to: {string.Join("; ", groupMembers)}");
+                Utilities.SendEmail(ctx, groupMembers, emailBody, emailSubject);
+            }
         }
 
         private ListItemCollection GetInCompleteRFIResponses()

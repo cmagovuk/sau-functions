@@ -144,6 +144,31 @@ namespace CMA.SAU.AzureFunctions
             ctx.ExecuteQueryRetry();
         }
 
+        internal static List<string> GetGroupMembers(GraphServiceClient gc, string caseGroupId)
+        {
+            List<string> ids = new List<string>();
+            var members = gc.Groups[$"{{{caseGroupId}}}"].Members.Request().GetAsync().Result;
+
+            foreach (Microsoft.Graph.User member in members)
+            {
+                if (!ids.Contains(member.Mail.ToLower())) ids.Add(member.Mail.ToLower());
+            }
+
+            return ids;
+        }
+
+        internal static List<string> GetGroupOwners(GraphServiceClient gc, string caseGroupId)
+        {
+            List<string> ids = new List<string>();
+            var owners = gc.Groups[$"{{{caseGroupId}}}"].Owners.Request().GetAsync().Result;
+            foreach (Microsoft.Graph.User owner in owners)
+            {
+                if (!ids.Contains(owner.Mail.ToLower())) ids.Add(owner.Mail.ToLower());
+            }
+
+            return ids;
+        }
+
         private static List<FileDetails> FormatDocuments(dynamic documents)
         {
             List<string> filenames = new List<string>();

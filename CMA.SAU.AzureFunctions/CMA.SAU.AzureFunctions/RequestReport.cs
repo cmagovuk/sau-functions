@@ -6,7 +6,7 @@ namespace CMA.SAU.AzureFunctions
 {
     internal class RequestReport
     {
-        internal static void Submit(ILogger log, Response response, dynamic reference, dynamic uniqueId, dynamic documents, dynamic request)
+        internal static void Submit(ILogger log, Response response, dynamic reference, dynamic uniqueId, dynamic documents, dynamic request, dynamic projectName)
         {
             string submission_list = System.Environment.GetEnvironmentVariable("SUBMISSIONS_LIST");
             using (ClientContext ctx = Utilities.GetSAUCasesContext())
@@ -18,6 +18,7 @@ namespace CMA.SAU.AzureFunctions
                 listItem[Constants.UNIQUE_ID] = (string)uniqueId;
                 listItem[Constants.DOCUMENT_JSON] = documents.ToString();
                 listItem[Constants.REQUEST_JSON] = request?.ToString();
+                listItem[Constants.SAU_PROJ_NAME] = (string)projectName;
                 listItem.Update();
                 ctx.ExecuteQueryRetry();
             }
@@ -35,7 +36,8 @@ namespace CMA.SAU.AzureFunctions
 
             CamlQuery query = CamlQuery.CreateAllItemsQuery();
             query.ViewXml = "<View><ViewFields>" +
-                    $"<FieldRef Name='{Constants.SAU_EXTERNAL_MAILBOX_ID}'/>" +
+                    $"<FieldRef Name='{Constants.TITLE}'/><FieldRef Name='{Constants.SAU_CASE_GROUP_ID}'/>" +
+                    $"<FieldRef Name='{Constants.SAU_CASE_SITE_URL}'/><FieldRef Name='{Constants.SAU_PROJ_NAME}'/>" +
                         "</ViewFields><Query>" +
                             "<Where>" +
                                 $"<Eq><FieldRef Name='SAURequestUniqueID' /><Value Type='Text'>{uniqueId}</Value></Eq>" +
@@ -50,17 +52,7 @@ namespace CMA.SAU.AzureFunctions
             if (items.Count == 1)
             {
                 ProcessResponse(log, uniqueId, documents);
-
-                if (items[0][Constants.SAU_EXTERNAL_MAILBOX_ID] is string mailboxId)
-                {
-                    Microsoft.Graph.GraphServiceClient graphClient = Utilities.GetGraphClientWithCert();
-                    var result = graphClient.Users[mailboxId].Request().GetAsync().Result;
-                    response.data = result.UserPrincipalName;
-                }
-                else
-                {
-                    log.LogError("Failed to find email box");
-                }
+                SendRFIResponseEmail(log, items[0]);
             }
         }
 
@@ -82,7 +74,8 @@ namespace CMA.SAU.AzureFunctions
 
             CamlQuery query = CamlQuery.CreateAllItemsQuery();
             query.ViewXml = "<View><ViewFields>" +
-                    $"<FieldRef Name='{Constants.SAU_CASE_SITE_URL}'/><FieldRef Name='{Constants.SAU_EXTERNAL_MAILBOX_ID}'/>" +
+                    $"<FieldRef Name='{Constants.TITLE}'/><FieldRef Name='{Constants.SAU_CASE_GROUP_ID}'/>" +
+                    $"<FieldRef Name='{Constants.SAU_CASE_SITE_URL}'/><FieldRef Name='{Constants.SAU_PROJ_NAME}'/>" +
                      "</ViewFields><Query>" +
                      "<Where>" +
                      $"<Eq><FieldRef Name='SAURequestUniqueID' /><Value Type='Text'>{uniqueId}</Value></Eq>" +
@@ -100,17 +93,7 @@ namespace CMA.SAU.AzureFunctions
                 {
                     log.LogInformation($"Found casework site {caseUrl}");
                     UploadDocuments(caseUrl, documents, log, folder);
-
-                    if (items[0][Constants.SAU_EXTERNAL_MAILBOX_ID] is string mailboxId)
-                    {
-                        Microsoft.Graph.GraphServiceClient graphClient = Utilities.GetGraphClientWithCert();
-                        var result = graphClient.Users[mailboxId].Request().GetAsync().Result;
-                        response.data = result.UserPrincipalName;
-                    }
-                    else
-                    {
-                        log.LogError("Failed to find email box");
-                    }
+                    SendWithdrawRequestEmail(log, items[0]);
                 }
                 else
                 {
@@ -160,6 +143,56 @@ namespace CMA.SAU.AzureFunctions
                         log.LogError("Failed to find Casework item");
                     }
                 }
+            }
+        }
+        private static void SendRFIResponseEmail(ILogger log, ListItem submissionRequest)
+        {
+            string caseGroupId = (string)submissionRequest[Constants.SAU_CASE_GROUP_ID];
+            string caseUrl = (string)submissionRequest[Constants.SAU_CASE_SITE_URL];
+            if (!string.IsNullOrEmpty(caseGroupId) && !string.IsNullOrEmpty(caseUrl))
+            {
+                string projectName = (string)submissionRequest[Constants.SAU_PROJ_NAME];
+                string emailSubject = System.Environment.GetEnvironmentVariable("RFI_RESPONSE_SUBJECT");
+                emailSubject = emailSubject.Replace("{ID}", $"SAU{submissionRequest[Constants.TITLE]}");
+                // Build email body
+                string emailBody =
+                     $"<p>There has been a response to a request for information on SAU{submissionRequest[Constants.TITLE]}.</p>"
+                    + $"<p>Check the response in the <a href='{caseUrl}'>{(projectName != null ? projectName : "SAU Request")} {submissionRequest[Constants.TITLE]}</a> SharePoint case site.</p>";
+
+                SendRequestSiteEmail(log, caseUrl, caseGroupId, emailSubject, emailBody);
+            }
+        }
+
+        private static void SendWithdrawRequestEmail(ILogger log, ListItem submissionRequest)
+        {
+            string caseGroupId = (string)submissionRequest[Constants.SAU_CASE_GROUP_ID];
+            string caseUrl = (string)submissionRequest[Constants.SAU_CASE_SITE_URL];
+            if (!string.IsNullOrEmpty(caseGroupId) && !string.IsNullOrEmpty(caseUrl))
+            {
+                string projectName = (string)submissionRequest[Constants.SAU_PROJ_NAME];
+                string emailSubject = System.Environment.GetEnvironmentVariable("WITHDRAW_REQUEST_SUBJECT");
+                emailSubject = emailSubject.Replace("{ID}", $"SAU{submissionRequest[Constants.TITLE]}");
+
+                // Build email body
+                string emailBody =
+                     $"<p>There has been a request to withdraw SAU{submissionRequest[Constants.TITLE]}.</p>"
+                    + $"<p>Check the withdraw document in the <a href='{caseUrl}'>{(projectName != null ? projectName : "SAU Request")} {submissionRequest[Constants.TITLE]}</a> SharePoint case site.</p>";
+
+                SendRequestSiteEmail(log, caseUrl, caseGroupId, emailSubject, emailBody);
+            }
+        }
+
+        private static void SendRequestSiteEmail(ILogger log, string caseUrl, string caseGroupId, string emailSubject, string emailBody)
+        {
+            Microsoft.Graph.GraphServiceClient gc = Utilities.GetGraphClientWithCert();
+            var groupOwners = Utilities.GetGroupOwners(gc, caseGroupId);
+
+            if (groupOwners.Count > 0)
+            {
+                using ClientContext ctx = Utilities.GetContext(caseUrl);
+                // Send email
+                log.LogInformation($"Sending email to: {string.Join("; ", groupOwners)}");
+                Utilities.SendEmail(ctx, groupOwners, emailBody, emailSubject);
             }
         }
 
