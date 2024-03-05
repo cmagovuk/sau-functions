@@ -133,6 +133,7 @@ namespace CMA.SAU.AzureFunctions
 
         internal static void SendEmail(ClientContext ctx, List<string> recipients, string emailBody, string emailSubject)
         {
+            EnsureRecipients(ctx, recipients);
             var ep = new EmailProperties
             {
                 To = recipients,
@@ -142,6 +143,14 @@ namespace CMA.SAU.AzureFunctions
 
             Utility.SendEmail(ctx, ep);
             ctx.ExecuteQueryRetry();
+        }
+
+        private static void EnsureRecipients(ClientContext ctx, List<string> recipients)
+        {
+            foreach (string recipient in recipients)
+            {
+                ctx.Web.EnsureUser(recipient);
+            }
         }
 
         internal static List<string> GetGroupMembers(GraphServiceClient gc, string caseGroupId)

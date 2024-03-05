@@ -184,15 +184,23 @@ namespace CMA.SAU.AzureFunctions
 
         private static void SendRequestSiteEmail(ILogger log, string caseUrl, string caseGroupId, string emailSubject, string emailBody)
         {
-            Microsoft.Graph.GraphServiceClient gc = Utilities.GetGraphClientWithCert();
-            var groupOwners = Utilities.GetGroupOwners(gc, caseGroupId);
-
-            if (groupOwners.Count > 0)
+            try
             {
-                using ClientContext ctx = Utilities.GetContext(caseUrl);
-                // Send email
-                log.LogInformation($"Sending email to: {string.Join("; ", groupOwners)}");
-                Utilities.SendEmail(ctx, groupOwners, emailBody, emailSubject);
+                Microsoft.Graph.GraphServiceClient gc = Utilities.GetGraphClientWithCert();
+                var groupOwners = Utilities.GetGroupOwners(gc, caseGroupId);
+
+                if (groupOwners.Count > 0)
+                {
+                    using ClientContext ctx = Utilities.GetContext(caseUrl);
+                    // Send email
+                    log.LogInformation($"Sending email to: {string.Join("; ", groupOwners)}");
+                    Utilities.SendEmail(ctx, groupOwners, emailBody, emailSubject);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                log.LogError(ex, "Error sending email");
             }
         }
 
