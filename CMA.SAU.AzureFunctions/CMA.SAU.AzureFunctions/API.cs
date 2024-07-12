@@ -61,6 +61,10 @@ namespace CMA.SAU.AzureFunctions
                         RequestReport.Mailbox(log, response, payload.uniqueId);
                         break;
 
+                    case "PostReport.Submit":
+                        PostReport.Submit(log, response, payload);
+                        break;
+
                     case "Test.Group":
                         await Test.Group(log, response, (string)payload.input);
                         break;
