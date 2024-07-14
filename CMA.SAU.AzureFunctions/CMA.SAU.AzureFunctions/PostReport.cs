@@ -41,6 +41,7 @@ namespace CMA.SAU.AzureFunctions
                 listItem["SAUBeneficiary"] = ((string)payload.beneficiary);
                 listItem["SAUBenSize"] = ((string)payload.ben_size);
                 listItem["SAUGoodsServices"] = payload.ben_good_svr.ToObject<string[]>();
+                listItem["SAUSpecialCatValues"] = payload.special_cat_values.ToObject<string[]>();
                 listItem["SAUStartDate"] = payload.start_date != null ? ((DateTime)payload.start_date) : null;
                 listItem["SAUEndDate"] = payload.end_date != null ? ((DateTime)payload.end_date) : null;
                 listItem["SAUSubmittedDate"] = payload.submitted_date != null ? ((DateTime)payload.submitted_date) : null;
@@ -81,29 +82,41 @@ namespace CMA.SAU.AzureFunctions
                 listItem["SAURejectReason"] = (string)postReport.reject_reason;
                 listItem["SAUWithdrawnReason"] = (string)postReport.withdrawn_reason;
 
-                listItem["SAUPEPolicyText"] = (string)postReport.pe_policy_text;
-                listItem["SAUPEOtherMeansText"] = (string)postReport.pe_other_means_text;  
-                listItem["SAUCCounterfactualText"] = (string)postReport.pc_counterfactual_text;
-                listItem["SAUCEcoBehaviourText"] = (string)postReport.pc_eco_behaviour_text;
-                listItem["SAUDAdditionalityText"] = (string)postReport.pd_additionality_text;
-                listItem["SAUDCostsText"] = (string)postReport.pd_costs_text;
-                listItem["SAUBProportionText"] = (string)postReport.pb_proportion_text;
-                listItem["SAUFSubsidyCharsText"] = (string)postReport.pf_subsidy_char_text;
-                listItem["SAUFMarketCharsText"] = (string)postReport.pf_market_char_text;
-                listItem["SAUGBalanceUKText"] = (string)postReport.pg_balance_uk_text;
-                listItem["SAUGBalanceIntlText"] = (string)postReport.pg_balance_intl_text;
-                listItem["SAUAPolicyEvidenceText"] = (string)postReport.pa_policy_evidence_text;
-                listItem["SAUAMarketFailText"] = (string)postReport.pa_market_fail_text;
-                listItem["SAUAEquityText"] = (string)postReport.pa_equity_text;
-                listItem["SAUEEPrinciplesText"] = (string)postReport.ee_principles_text;
-                listItem["SAUEEIssuesText"] = (string)postReport.ee_issues_text;
-                listItem["SAUOtherIssuesText"] = (string)postReport.other_issues_text;
-                listItem["SAUSpecialCatsText"] = (string)postReport.special_cats_text;
-                listItem["SAUThirdPartyRepsText"] = (string)postReport.third_party_reps_text;
-                listItem["SAUConfiIssuesText"] = (string)postReport.confi_issues_text;
+                SetTextField(listItem, "SAUPEPolicy", (string)postReport.pe_policy_text);
+                SetTextField(listItem, "SAUPEOtherMeans", (string)postReport.pe_other_means_text);
+                SetTextField(listItem, "SAUCCounterfactual", (string)postReport.pc_counterfactual_text);
+                SetTextField(listItem, "SAUCEcoBehaviour", (string)postReport.pc_eco_behaviour_text);
+                SetTextField(listItem, "SAUDAdditionality", (string)postReport.pd_additionality_text);
+                SetTextField(listItem, "SAUDCosts", (string)postReport.pd_costs_text);
+                SetTextField(listItem, "SAUBProportion", (string)postReport.pb_proportion_text);
+                SetTextField(listItem, "SAUFSubsidyChars", (string)postReport.pf_subsidy_char_text);
+                SetTextField(listItem, "SAUFMarketChars", (string)postReport.pf_market_char_text);
+                SetTextField(listItem, "SAUGBalanceUK", (string)postReport.pg_balance_uk_text);
+                SetTextField(listItem, "SAUGBalanceIntl", (string)postReport.pg_balance_intl_text);
+                SetTextField(listItem, "SAUAPolicyEvidence", (string)postReport.pa_policy_evidence_text);
+                SetTextField(listItem, "SAUAMarketFail", (string)postReport.pa_market_fail_text);
+                SetTextField(listItem, "SAUAEquity", (string)postReport.pa_equity_text);
+                SetTextField(listItem, "SAUEEPrinciples", (string)postReport.ee_principles_text);
+                SetTextField(listItem, "SAUEEIssues", (string)postReport.ee_issues_text);
+                SetTextField(listItem, "SAUOtherIssues", (string)postReport.other_issues_text);
+                SetTextField(listItem, "SAUThirdPartyReps", (string)postReport.third_party_reps_text);
+                SetTextField(listItem, "SAUConfiIssues", (string)postReport.confi_issues_text);
 
                 listItem.Update();
                 ctx.ExecuteQueryRetry();
+            }
+        }
+
+        private static void SetTextField(ListItem listItem, string fieldName, string text)
+        {
+            string textField = $"{fieldName}Text";
+            if ((string)listItem[fieldName] == "Yes")
+            {
+                listItem[textField] = text;
+            }
+            else
+            {
+                listItem[textField] = "";
             }
         }
 
