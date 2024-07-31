@@ -99,6 +99,7 @@ namespace CMA.SAU.AzureFunctions
                 SetTextField(listItem, "SAUEEPrinciples", (string)postReport.ee_principles_text);
                 SetTextField(listItem, "SAUEEIssues", (string)postReport.ee_issues_text);
                 SetTextField(listItem, "SAUOtherIssues", (string)postReport.other_issues_text);
+                SetLinkField(listItem, "SAUOtherIssues", (string)postReport.other_issues_link);
                 SetTextField(listItem, "SAUThirdPartyReps", (string)postReport.third_party_reps_text);
                 SetTextField(listItem, "SAUConfiIssues", (string)postReport.confi_issues_text);
 
@@ -118,6 +119,27 @@ namespace CMA.SAU.AzureFunctions
             {
                 listItem[textField] = "";
             }
+        }
+
+        private static void SetLinkField(ListItem listItem, string fieldName, string text)
+        {
+            string textField = $"{fieldName}Link";
+            if ((string)listItem[fieldName] == "Yes" && !string.IsNullOrEmpty(text) && IsValidUrl(text))
+            {
+                FieldUrlValue fuv = new();
+                fuv.Description = text;
+                fuv.Url = text;
+                listItem[textField] = fuv;
+            }
+            else
+            {
+                listItem[textField] = null;
+            }
+        }
+
+        private static bool IsValidUrl(string uriString)
+        {
+            return Uri.TryCreate(uriString, UriKind.Absolute, out Uri uriResult) && (uriResult.Scheme == Uri.UriSchemeHttps);
         }
 
         private static string SetYesNoChoiceField(dynamic pe_policy)
