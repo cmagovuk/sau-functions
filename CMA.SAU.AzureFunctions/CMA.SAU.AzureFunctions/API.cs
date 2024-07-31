@@ -45,6 +45,22 @@ namespace CMA.SAU.AzureFunctions
                         await User.PACreatedUser(log, response, (string)payload.userCreated, (string)payload.creatorName, (string)payload.creatorEmail, (string)payload.pa_name);
                         break;
 
+                    case "SAUUser.GetAllUsers":
+                        await SAUUser.GetAllUsers(log, response);
+                        break;
+
+                    case "SAUUser.GetUsers":
+                        await SAUUser.GetUsers(log, response, (string)payload.userGroup);
+                        break;
+
+                    case "SAUUser.AddUser":
+                        await SAUUser.AddUser(log, response, (string)payload.userGroup, (string)payload.email);
+                        break;
+
+                    case "SAUUser.RemoveUser":
+                        await SAUUser.RemoveUser(log, response, (string)payload.userGroup, (string)payload.userId);
+                        break;
+
                     case "RequestReport.Submit":
                         RequestReport.Submit(log, response, payload.reference, payload.uniqueId, payload.documents, payload.request, payload.projectName);
                         break;
