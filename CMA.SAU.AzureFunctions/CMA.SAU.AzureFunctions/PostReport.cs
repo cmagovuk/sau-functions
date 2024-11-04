@@ -42,6 +42,8 @@ namespace CMA.SAU.AzureFunctions
                 listItem["SAUBenSize"] = ((string)payload.ben_size);
                 listItem["SAUGoodsServices"] = payload.ben_good_svr.ToObject<string[]>();
                 listItem["SAUSpecialCatValues"] = payload.special_cat_values.ToObject<string[]>();
+                listItem["SAUIntlObligationValues"] = payload.intl_obligations.ToObject<string[]>();
+                listItem["SAUEEPrinciples"] = payload.ee_principles.ToObject<string[]>();
                 listItem["SAUStartDate"] = payload.start_date != null ? ((DateTime)payload.start_date) : null;
                 listItem["SAUEndDate"] = payload.end_date != null ? ((DateTime)payload.end_date) : null;
                 listItem["SAUSubmittedDate"] = payload.submitted_date != null ? ((DateTime)payload.submitted_date) : null;
@@ -51,6 +53,8 @@ namespace CMA.SAU.AzureFunctions
                 dynamic postReport = payload.post_report;
 
                 listItem["SAUReferralName"] = (string)postReport.referral_name;
+                listItem["SAUPrincipalAdvisor"] = (string)postReport.principle_adviser;
+                listItem["SAUAssistDirector"] = (string)postReport.assist_director;
                 listItem["SAUPEPolicy"] = SetYesNoChoiceField(postReport.pe_policy);
                 listItem["SAUPEOtherMeans"] = SetYesNoChoiceField(postReport.pe_other_means);
                 listItem["SAUCCounterfactual"] = SetYesNoChoiceField(postReport.pc_counterfactual);
@@ -67,18 +71,17 @@ namespace CMA.SAU.AzureFunctions
                 listItem["SAUAMarketFail"] = SetYesNoChoiceField(postReport.pa_market_fail);
                 listItem["SAUAEquity"] = SetYesNoChoiceField(postReport.pa_equity);
 
-                listItem["SAUEEPrinciples"] = SetYesNoChoiceField(postReport.ee_principles);
                 listItem["SAUEEIssues"] = SetYesNoChoiceField(postReport.ee_issues);
                 listItem["SAUOtherIssues"] = SetYesNoChoiceField(postReport.other_issues);
 
                 listItem["SAUSpecialCats"] = SetYesNoChoiceField(postReport.special_cats);
+                listItem["SAUIntlObligation"] = SetYesNoChoiceField(postReport.intl_obligations);
                 listItem["SAUThirdPartyReps"] = SetYesNoChoiceField(postReport.third_party_reps);
                 listItem["SAUConfiIssues"] = SetYesNoChoiceField(postReport.confi_issues);
 
                 listItem["SAUEERequired"] = SetYesNoChoiceField(postReport.ee_required);
 
                 listItem["SAUValue"] = (string)postReport.value;
-                // listItem["SAUOtherIssueLink"] = postReport.other_issues_link
                 listItem["SAURejectReason"] = (string)postReport.reject_reason;
                 listItem["SAUWithdrawnReason"] = (string)postReport.withdrawn_reason;
 
@@ -96,13 +99,12 @@ namespace CMA.SAU.AzureFunctions
                 SetTextField(listItem, "SAUAPolicyEvidence", (string)postReport.pa_policy_evidence_text);
                 SetTextField(listItem, "SAUAMarketFail", (string)postReport.pa_market_fail_text);
                 SetTextField(listItem, "SAUAEquity", (string)postReport.pa_equity_text);
-                SetTextField(listItem, "SAUEEPrinciples", (string)postReport.ee_principles_text);
                 SetTextField(listItem, "SAUEEIssues", (string)postReport.ee_issues_text);
                 SetTextField(listItem, "SAUOtherIssues", (string)postReport.other_issues_text);
                 SetLinkField(listItem, "SAUOtherIssues", (string)postReport.other_issues_link);
                 SetTextField(listItem, "SAUThirdPartyReps", (string)postReport.third_party_reps_text);
                 SetTextField(listItem, "SAUConfiIssues", (string)postReport.confi_issues_text);
-
+                UpdateLinkField(listItem, "SAUFinalReportLink", (string)postReport.final_report_url);
                 listItem.Update();
                 ctx.ExecuteQueryRetry();
             }
@@ -126,14 +128,33 @@ namespace CMA.SAU.AzureFunctions
             string textField = $"{fieldName}Link";
             if ((string)listItem[fieldName] == "Yes" && !string.IsNullOrEmpty(text) && IsValidUrl(text))
             {
-                FieldUrlValue fuv = new();
-                fuv.Description = text;
-                fuv.Url = text;
+                FieldUrlValue fuv = new()
+                {
+                    Description = text,
+                    Url = text
+                };
                 listItem[textField] = fuv;
             }
             else
             {
                 listItem[textField] = null;
+            }
+        }
+
+        private static void UpdateLinkField(ListItem listItem, string linkField, string text)
+        {
+            if (!string.IsNullOrEmpty(text) && IsValidUrl(text))
+            {
+                FieldUrlValue fuv = new()
+                {
+                    Description = text,
+                    Url = text
+                };
+                listItem[linkField] = fuv;
+            }
+            else
+            {
+                listItem[linkField] = null;
             }
         }
 
