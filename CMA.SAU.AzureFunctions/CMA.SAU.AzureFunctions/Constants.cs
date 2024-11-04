@@ -7,6 +7,7 @@
         internal const string DOCUMENT_JSON = "SAUJSONDocuments";
         internal const string REQUEST_JSON = "SAUJSONRequest";
         internal const string CASE_REQUEST_ID = "SAUCaseRequestId";
+        internal const string SAU_PROJ_NAME = "SAUProjectName";
         internal const string STATUS = "Status";
         internal const string INTERNAL_MAILBOX_ID = "InternalMailboxID";
         internal const string EXTERNAL_MAILBOX_ID = "ExternalMailboxID";
@@ -14,6 +15,8 @@
         internal const string GROUP_ID = "GroupID";
         internal const string OWNERS = "Owners";    
         internal const string MEMBERS = "Members";
+        internal const string PROJECT_NAME = "ProjectName";
+        internal const string PROJECT_ID = "ProjectID";
         internal const string SAU_CASE_GROUP_ID = "SAUCaseGroupID";
         internal const string SAU_CASE_SITE_URL = "SAUCaseSiteUrl";
         internal const string SAU_INTERNAL_MAILBOX_ID = "SAUInternalMailboxID";

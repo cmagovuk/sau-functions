@@ -55,8 +55,8 @@ namespace CMA.SAU.AzureFunctions
                     if (!string.IsNullOrEmpty(caseGroupId))
                     {
                         Microsoft.Graph.GraphServiceClient gc = Utilities.GetGraphClientWithCert();
-                        var groupMembers = GetGroupMembers(gc, caseGroupId);
-                        var groupOwners = GetGroupOwners(gc, caseGroupId);
+                        var groupMembers = Utilities.GetGroupMembers(gc, caseGroupId);
+                        var groupOwners = Utilities.GetGroupOwners(gc, caseGroupId);
 
                         info.Changed = (DifferentUsers(initialOwners, groupOwners) || DifferentMembers(initialOwners, initialMembers, groupMembers));
                     }
@@ -132,31 +132,6 @@ namespace CMA.SAU.AzureFunctions
             List<string> test = new List<string>(initialUsers.Intersect(groupUsers));
 
             return test.Count != initialUsers.Count;
-        }
-
-        private List<string> GetGroupMembers(GraphServiceClient gc, string caseGroupId)
-        {
-            List<string> ids = new List<string>();
-            var members =  gc.Groups[$"{{{caseGroupId}}}"].Members.Request().GetAsync().Result;
-
-            foreach (Microsoft.Graph.User member in members)
-            {
-                if (!ids.Contains(member.Mail.ToLower())) ids.Add(member.Mail.ToLower());
-            }
-
-            return ids;
-        }
-
-        private List<string> GetGroupOwners(GraphServiceClient gc, string caseGroupId)
-        {
-            List<string> ids = new List<string>();
-            var owners = gc.Groups[$"{{{caseGroupId}}}"].Owners.Request().GetAsync().Result;
-            foreach (Microsoft.Graph.User owner in owners)
-            {
-                if (!ids.Contains(owner.Mail.ToLower())) ids.Add(owner.Mail.ToLower());
-            }
-
-            return ids;
         }
 
         private ListItemCollection GetCasesToCheckOld(ClientContext ctx, ILogger log)

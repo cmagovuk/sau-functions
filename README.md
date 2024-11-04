@@ -150,6 +150,8 @@ NB: this description uses a PowerShell script to create a certificate, over meth
     **CLIENT_ID** | Guid of App Registration created [above](#prerequisite-1-create-certificate)
     **OIM_SITE_COLLECTION** | Url of the SharePoint site collection containing list
     **PAP_URL** | SAU PAP url
+    **NEW_REQUEST_SUBJECT** | New request submitted email subject
+    **RFI_RESPONSE_SUBJECT** | RFI Response submitted email subject
     **RFI_RESPONSES_LIST** | SAU cases RFI Responses list
     **ROLE_MAPPINGS** | Thumbprint of certificate loaded into Function App
     **SAU_CASES_SITE** | SharePoint SAU cases site
@@ -161,6 +163,7 @@ NB: this description uses a PowerShell script to create a certificate, over meth
     **TEAM_ASSIGNED_DAYS** | Team assigned days
     **TENANT_ID** | SharePoint tenant id
     **WEBSITE_LOAD_CERTIFICATES** | Thumbprint of certificate loaded into Function App
+    **WITHDRAW_REQUEST_SUBJECT** | Withdraw request email subject
 
 ## DEPLOYMENT STEPS ##
 Publish code to Functional App
